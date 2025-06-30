@@ -1,8 +1,18 @@
 import express from "express";
-import path from "path";
+import { apiConfig } from "./config.js";
 
 const app = express();
 const PORT = 8080;
+
+function middlewareMetricsInc(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  // console.log(`Hits: ${APIConfig.fileserverHits}`);
+  apiConfig.fileserverHits++;
+  next();
+}
 
 function middlewareLogResponses(
   req: express.Request,
@@ -18,12 +28,22 @@ function middlewareLogResponses(
   });
   next();
 }
-app.use("/app", express.static("./src/app"));
+app.use("/app", middlewareMetricsInc, express.static("./src/app"));
 app.use(middlewareLogResponses);
 
 app.get("/healthz", (_, res: express.Response) => {
   res.set("Content-Type", "text/plain;charset=utf-8");
-  res.status(200).send("OK");
+  res.status(200).send("Hello ");
+  res.end();
+});
+
+app.get("/metrics", (req: express.Request, res: express.Response) => {
+  res.send(`Hits: ${apiConfig.fileserverHits}`);
+  res.end();
+});
+app.get("/reset", (_, res) => {
+  apiConfig.fileserverHits = 0;
+  res.write("Hits reset to 0");
   res.end();
 });
 
