@@ -31,17 +31,24 @@ function middlewareLogResponses(
 app.use("/app", middlewareMetricsInc, express.static("./src/app"));
 app.use(middlewareLogResponses);
 
-app.get("/healthz", (_, res: express.Response) => {
+app.get("/api/healthz", (_, res: express.Response) => {
   res.set("Content-Type", "text/plain;charset=utf-8");
-  res.status(200).send("Hello ");
+  res.status(200).send("OK");
   res.end();
 });
 
-app.get("/metrics", (req: express.Request, res: express.Response) => {
-  res.send(`Hits: ${apiConfig.fileserverHits}`);
+app.get("/admin/metrics", (req: express.Request, res: express.Response) => {
+  res.set("Content-Type", "text/html;charset=utf-8");
+
+  res.status(200).send(`<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited ${apiConfig.fileserverHits} times!</p>
+  </body>
+</html>`);
   res.end();
 });
-app.get("/reset", (_, res) => {
+app.get("/admin/reset", (_, res) => {
   apiConfig.fileserverHits = 0;
   res.write("Hits reset to 0");
   res.end();
