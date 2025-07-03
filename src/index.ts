@@ -3,6 +3,7 @@ import { apiConfig } from "./config.js";
 
 const app = express();
 const PORT = 8080;
+const forbiddenWords = ["kerfuffle", "sharbert", "fornax"];
 
 app.use(express.json());
 function middlewareMetricsInc(
@@ -60,24 +61,33 @@ app.post("/api/validate_chirp", (req, res) => {
     body: string;
   };
   type responseData = {
-    valid: boolean | undefined;
+    cleanedBody: string | undefined;
     error: string | undefined;
   };
   const resBody: responseData = {
     error: "",
-    valid: false,
+    cleanedBody: "",
   };
 
   const params: parameters = req.body;
   try {
     if (params.body.length > 140) {
       resBody.error = "Chirp is too long";
-      resBody.valid = false;
+      // resBody.valid = false;
       const jsonBody = JSON.stringify(resBody);
       res.status(400).send(jsonBody);
     } else {
       resBody.error = "";
-      resBody.valid = true;
+
+      for (const word of params.body.split(" ")) {
+        if (forbiddenWords.includes(word.toLowerCase())) {
+          resBody.cleanedBody += "**** ";
+        } else {
+          resBody.cleanedBody += `${word} `;
+        }
+      }
+      resBody.cleanedBody = resBody.cleanedBody?.trim();
+    
       res.status(200).send(JSON.stringify(resBody));
     }
     res.end();
