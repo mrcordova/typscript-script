@@ -4,6 +4,7 @@ import { apiConfig } from "./config.js";
 const app = express();
 const PORT = 8080;
 
+app.use(express.json());
 function middlewareMetricsInc(
   req: express.Request,
   res: express.Response,
@@ -55,7 +56,9 @@ app.post("/admin/reset", (_, res) => {
 });
 
 app.post("/api/validate_chirp", (req, res) => {
-  let body = "";
+  type parameters = {
+    body: string;
+  };
   type responseData = {
     valid: boolean | undefined;
     error: string | undefined;
@@ -65,34 +68,54 @@ app.post("/api/validate_chirp", (req, res) => {
     valid: false,
   };
 
-  req.on("data", (chunk) => {
-    body += chunk;
-  });
-
-  res.header("Content-type", "application/json");
-  req.on("end", () => {
-    try {
-      const parsedBody = JSON.parse(body);
-
-      if (parsedBody.body.length > 140) {
-        resBody.error = "Chirp is too long";
-        resBody.valid = false;
-        const jsonBody = JSON.stringify(resBody);
-        res.status(400).send(jsonBody);
-      } else {
-        resBody.error = "";
-        resBody.valid = true;
-        res.status(200).send(JSON.stringify(resBody));
-      }
-      res.end();
-    } catch (error) {
-      if (error) {
-        resBody.error = "Something went wrong";
-        const jsonBody = JSON.stringify(resBody);
-        res.status(400).send(jsonBody);
-      }
+  const params: parameters = req.body;
+  try {
+    if (params.body.length > 140) {
+      resBody.error = "Chirp is too long";
+      resBody.valid = false;
+      const jsonBody = JSON.stringify(resBody);
+      res.status(400).send(jsonBody);
+    } else {
+      resBody.error = "";
+      resBody.valid = true;
+      res.status(200).send(JSON.stringify(resBody));
     }
-  });
+    res.end();
+  } catch (error) {
+    if (error) {
+      resBody.error = "Something went wrong";
+      const jsonBody = JSON.stringify(resBody);
+      res.status(400).send(jsonBody);
+    }
+  }
+  // req.on("data", (chunk) => {
+  //   body += chunk;
+  // });
+
+  // res.header("Content-type", "application/json");
+  // req.on("end", () => {
+  //   try {
+  //     const parsedBody = JSON.parse(body);
+
+  //     if (parsedBody.body.length > 140) {
+  //       resBody.error = "Chirp is too long";
+  //       resBody.valid = false;
+  //       const jsonBody = JSON.stringify(resBody);
+  //       res.status(400).send(jsonBody);
+  //     } else {
+  //       resBody.error = "";
+  //       resBody.valid = true;
+  //       res.status(200).send(JSON.stringify(resBody));
+  //     }
+  //     res.end();
+  //   } catch (error) {
+  //     if (error) {
+  //       resBody.error = "Something went wrong";
+  //       const jsonBody = JSON.stringify(resBody);
+  //       res.status(400).send(jsonBody);
+  //     }
+  //   }
+  // });
 });
 
 app.listen(PORT, (e) => {
