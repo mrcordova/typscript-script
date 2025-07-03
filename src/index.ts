@@ -48,10 +48,51 @@ app.get("/admin/metrics", (req: express.Request, res: express.Response) => {
 </html>`);
   res.end();
 });
-app.get("/admin/reset", (_, res) => {
+app.post("/admin/reset", (_, res) => {
   apiConfig.fileserverHits = 0;
   res.write("Hits reset to 0");
   res.end();
+});
+
+app.post("/api/validate_chirp", (req, res) => {
+  let body = "";
+  type responseData = {
+    valid: boolean | undefined;
+    error: string | undefined;
+  };
+  const resBody: responseData = {
+    error: "",
+    valid: false,
+  };
+
+  req.on("data", (chunk) => {
+    body += chunk;
+  });
+
+  res.header("Content-type", "application/json");
+  req.on("end", () => {
+    try {
+      const parsedBody = JSON.parse(body);
+
+      if (parsedBody.body.length > 140) {
+        resBody.error = "Chirp is too long";
+        resBody.valid = false;
+        const jsonBody = JSON.stringify(resBody);
+        res.status(400).send(jsonBody);
+      } else {
+        resBody.error = "";
+        resBody.valid = true;
+        res.status(200).send(JSON.stringify(resBody));
+      }
+      res.end();
+    } catch (error) {
+      if (error) {
+        resBody.error = "Something went wrong";
+        const jsonBody = JSON.stringify(resBody);
+        res.status(400).send(jsonBody);
+      }
+    }
+  });
 });
 
 app.listen(PORT, (e) => {
