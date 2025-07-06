@@ -5,6 +5,30 @@ const app = express();
 const PORT = 8080;
 const forbiddenWords = ["kerfuffle", "sharbert", "fornax"];
 
+class BadRequest extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+class Unauthorized extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+class Forbidden extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+class NotFound extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 app.use(express.json());
 function middlewareMetricsInc(
   req: express.Request,
@@ -22,8 +46,12 @@ function errorHandler(
   res: express.Response,
   next: NextFunction
 ) {
-  console.error(`${err}`);
-  res.status(500).json({ error: "Something went wrong on our end" });
+  // console.error(`${err}`);
+  if (err instanceof BadRequest) {
+    res.status(400).json({ error: err.message });
+  } else {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 }
 
 function middlewareLogResponses(
@@ -82,7 +110,7 @@ app.post("/api/validate_chirp", (req, res, next) => {
   const params: parameters = req.body;
   try {
     if (params.body.length > 140) {
-      next(new Error("here"));
+      next(new BadRequest("Chirp is too long. Max length is 140"));
     } else {
       resBody.error = "";
 
