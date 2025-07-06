@@ -1,4 +1,4 @@
-import express from "express";
+import express, { NextFunction } from "express";
 import { apiConfig } from "./config.js";
 
 const app = express();
@@ -14,6 +14,16 @@ function middlewareMetricsInc(
   // console.log(`Hits: ${APIConfig.fileserverHits}`);
   apiConfig.fileserverHits++;
   next();
+}
+
+function errorHandler(
+  err: Error,
+  req: express.Request,
+  res: express.Response,
+  next: NextFunction
+) {
+  console.error(`${err}`);
+  res.status(500).json({ error: "Something went wrong on our end" });
 }
 
 function middlewareLogResponses(
@@ -56,7 +66,7 @@ app.post("/admin/reset", (_, res) => {
   res.end();
 });
 
-app.post("/api/validate_chirp", (req, res) => {
+app.post("/api/validate_chirp", (req, res, next) => {
   type parameters = {
     body: string;
   };
@@ -72,10 +82,7 @@ app.post("/api/validate_chirp", (req, res) => {
   const params: parameters = req.body;
   try {
     if (params.body.length > 140) {
-      resBody.error = "Chirp is too long";
-      // resBody.valid = false;
-      const jsonBody = JSON.stringify(resBody);
-      res.status(400).send(jsonBody);
+      next(new Error("here"));
     } else {
       resBody.error = "";
 
@@ -87,47 +94,17 @@ app.post("/api/validate_chirp", (req, res) => {
         }
       }
       resBody.cleanedBody = resBody.cleanedBody?.trim();
-    
+
       res.status(200).send(JSON.stringify(resBody));
     }
     res.end();
   } catch (error) {
     if (error) {
-      resBody.error = "Something went wrong";
-      const jsonBody = JSON.stringify(resBody);
-      res.status(400).send(jsonBody);
+      next(error);
     }
   }
-  // req.on("data", (chunk) => {
-  //   body += chunk;
-  // });
-
-  // res.header("Content-type", "application/json");
-  // req.on("end", () => {
-  //   try {
-  //     const parsedBody = JSON.parse(body);
-
-  //     if (parsedBody.body.length > 140) {
-  //       resBody.error = "Chirp is too long";
-  //       resBody.valid = false;
-  //       const jsonBody = JSON.stringify(resBody);
-  //       res.status(400).send(jsonBody);
-  //     } else {
-  //       resBody.error = "";
-  //       resBody.valid = true;
-  //       res.status(200).send(JSON.stringify(resBody));
-  //     }
-  //     res.end();
-  //   } catch (error) {
-  //     if (error) {
-  //       resBody.error = "Something went wrong";
-  //       const jsonBody = JSON.stringify(resBody);
-  //       res.status(400).send(jsonBody);
-  //     }
-  //   }
-  // });
 });
-
+app.use(errorHandler);
 app.listen(PORT, (e) => {
   console.log(e);
   console.log(`Server is running at http://localhost:${PORT}`);
